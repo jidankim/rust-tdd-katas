@@ -14,13 +14,13 @@ impl From<ParseIntError> for CalculatorError {
 }
 
 
-/// Method that can take two numbers, separated by commas, and will return their sum
+/// Free-function that can take two numbers, separated by commas, and will return their sum
 fn add(numbers: &str) -> CalculatorResult {
   if numbers.is_empty() {
     Ok(0)
   } else {
     // TODO: Check if collect() call in the middle makes this code less performant
-    Ok(numbers.split(",").map(|s| s.parse::<Number>()).collect::<Result<Vec<Number>, ParseIntError>>()?.iter().fold(0, |acc, num| acc + num))
+    Ok(numbers.split(|c| c == ',' || c == '\n').map(|s| s.parse::<Number>()).collect::<Result<Vec<Number>, ParseIntError>>()?.iter().fold(0, |acc, num| acc + num))
   }
 }
 
@@ -80,6 +80,25 @@ mod tests {
   #[test]
   fn add_five_numbers_string() -> Result<(), CalculatorError> {
     assert_eq!(add("1,0,1,0,1000")?, 1002);
+    Ok(())
+  }
+
+  #[test]
+  fn add_three_numbers_with_new_line_delimiter_string() -> Result<(), CalculatorError> {
+    assert_eq!(add("1\n2,3")?, 6);
+    Ok(())
+  }
+
+  #[test]
+  fn add_one_with_invalid_delimiter_string() -> Result<(), CalculatorError> {
+    // TODO: Maybe add more specific parse error for delimiter?
+    assert!(matches!(add("1,\n"), Err(CalculatorError::ParseIntError(_))));
+    Ok(())
+  }
+
+  #[test]
+  fn add_four_numbers_with_new_line_delimiter_string() -> Result<(), CalculatorError> {
+    assert_eq!(add("1\n2,3\n100")?, 106);
     Ok(())
   }
 }
