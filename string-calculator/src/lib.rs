@@ -64,4 +64,22 @@ mod tests {
     assert!(matches!(add("35,bc"), Err(CalculatorError::ParseIntError(_))));
     Ok(())
   }
+
+  #[test]
+  fn add_three_numbers_string() -> Result<(), CalculatorError> {
+    assert_eq!(add("11,209,1")?, 221);
+    Ok(())
+  }
+
+  #[test]
+  fn add_three_invalid_string() -> Result<(), CalculatorError> {
+    assert!(matches!(add("11,209,1a"), Err(CalculatorError::ParseIntError(_))));
+    Ok(())
+  }
+
+  #[test]
+  fn add_five_numbers_string() -> Result<(), CalculatorError> {
+    assert_eq!(add("1,0,1,0,1000")?, 1002);
+    Ok(())
+  }
 }
