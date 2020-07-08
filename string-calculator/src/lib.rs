@@ -5,6 +5,7 @@ type CalculatorResult = Result<Number, CalculatorError>;
 
 #[derive(Debug)]
 enum CalculatorError {
+  ParseDelimiterError,
   ParseIntError(ParseIntError),
 }
 impl From<ParseIntError> for CalculatorError {
@@ -13,13 +14,45 @@ impl From<ParseIntError> for CalculatorError {
   }
 }
 
-
 /// Free-function that can take two numbers, separated by commas, and will return their sum
 fn add(numbers: &str) -> CalculatorResult {
   if numbers.is_empty() {
     Ok(0)
   } else {
+    add_non_empty(numbers)
+  }
+}
+
+fn add_non_empty(numbers: &str) -> CalculatorResult {
+  // Need 2 variables becuase 2 possible closures will have 2 different types
+  // This solution was picked instead of Boxing the closures as it doesn't involve a dynamic allocation
+  // https://stackoverflow.com/questions/27890435/assigning-an-unboxed-closure-from-an-if-statement
+//  let default_is_delimiter;
+//  let custom_is_delimiter;
+//  let is_delimiter = if numbers.starts_with("//") {
+//    // Set delimiter if configured by the first line
+//    let lines = numbers.splitn(2, '\n').collect::<Vec<&str>>();
+//    let delimiter_line = lines.first().ok_or(CalculatorError::ParseDelimiterError)?;
+//    let delimiter_char = delimiter_line.trim_start_matches('/').chars().next().ok_or(CalculatorError::ParseDelimiterError)?;
+//    custom_is_delimiter = |&c| c == delimiter_char;
+//    // Note: If not reference, the following error occurs
+//    // error[E0620]: cast to unsized type: `[closure@string-calculator/src/lib.rs:37:27: 37:45 delimiter:_]` as `dyn std::ops::Fn() -> _`
+//    &custom_is_delimiter as &dyn Fn(char) -> _
+//  } else {
+//    default_is_delimiter = |&c| c == ',' || c == '\n';
+//    &default_is_delimiter as &dyn Fn(char) -> _
+//  };
+//
+//  // TODO: Check if collect() call in the middle makes this code less performant
+//  Ok(numbers.split(is_delimiter).map(|s| s.parse::<Number>()).collect::<Result<Vec<Number>, ParseIntError>>()?.iter().fold(0, |acc, num| acc + num))
+  if numbers.starts_with("//") {
+    let lines = numbers.splitn(2, '\n').collect::<Vec<&str>>();
+    let delimiter_line = lines.first().ok_or(CalculatorError::ParseDelimiterError)?;
+    let numbers_line = lines.last().ok_or(CalculatorError::ParseDelimiterError)?;
+    let delimiter_char = delimiter_line.trim_start_matches('/').chars().next().ok_or(CalculatorError::ParseDelimiterError)?;
     // TODO: Check if collect() call in the middle makes this code less performant
+    Ok(numbers_line.split(|c| c == delimiter_char).map(|s| s.parse::<Number>()).collect::<Result<Vec<Number>, ParseIntError>>()?.iter().fold(0, |acc, num| acc + num))
+  } else {
     Ok(numbers.split(|c| c == ',' || c == '\n').map(|s| s.parse::<Number>()).collect::<Result<Vec<Number>, ParseIntError>>()?.iter().fold(0, |acc, num| acc + num))
   }
 }
@@ -99,6 +132,18 @@ mod tests {
   #[test]
   fn add_four_numbers_with_new_line_delimiter_string() -> Result<(), CalculatorError> {
     assert_eq!(add("1\n2,3\n100")?, 106);
+    Ok(())
+  }
+
+  #[test]
+  fn add_two_numbers_with_semi_colon_delimiter_string() -> Result<(), CalculatorError> {
+    assert_eq!(add("//;\n1;2")?, 3);
+    Ok(())
+  }
+
+  #[test]
+  fn add_three_numbers_with_star_delimiter_string() -> Result<(), CalculatorError> {
+    assert_eq!(add("//*\n11*209*1")?, 221);
     Ok(())
   }
 }
